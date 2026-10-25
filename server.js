@@ -1,5 +1,3 @@
-const dns = require("node:dns");
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
 require("dotenv").config();
 
 const express = require("express");
@@ -42,12 +40,12 @@ app.use((err, req, res, next) => {
 
 async function startServer() {
   if (!process.env.MONGO_URI) {
-    console.error("MONGO_URI must be set in .env");
+    console.error("MONGO_URI environment variable is required.");
     process.exit(1);
   }
 
   if (!process.env.JWT_SECRET) {
-    console.error("JWT_SECRET must be set in .env");
+    console.error("JWT_SECRET environment variable is required.");
     process.exit(1);
   }
 
@@ -56,33 +54,17 @@ async function startServer() {
     process.exit(1);
   }
 
-  let mongoUri = process.env.MONGO_URI;
-  if (/^(?:MONGO_URI=)+/i.test(mongoUri)) {
-    mongoUri = mongoUri.replace(/^(?:MONGO_URI=)+/i, "");
-    console.warn(
-      "MONGO_URI had an extra variable-name prefix; removed it for this run. Correct the value in .env."
-    );
-  }
-
+  const mongoUri = process.env.MONGO_URI;
   let parsedMongoUri;
   try {
     parsedMongoUri = new URL(mongoUri);
+    if (!["mongodb:", "mongodb+srv:"].includes(parsedMongoUri.protocol)) {
+      throw new Error("Unsupported MongoDB URI protocol");
+    }
   } catch {
     console.error("MONGO_URI is not a valid connection URI; its value is hidden.");
     process.exit(1);
   }
-
-  let mongoUsername;
-  try {
-    mongoUsername = decodeURIComponent(parsedMongoUri.username);
-  } catch {
-    console.error("MONGO_URI has an invalid encoded username; its value is hidden.");
-    process.exit(1);
-  }
-
-  console.log(
-    `MongoDB URI present: yes; hostname=${parsedMongoUri.hostname}; username=${mongoUsername || "(not set)"}`
-  );
 
   try {
     await mongoose.connect(mongoUri);
@@ -90,8 +72,8 @@ async function startServer() {
 
     const port = process.env.PORT || 5000;
 
-    app.listen(port, () => {
-      console.log(`Server running at http://localhost:${port}`);
+    app.listen(port, "0.0.0.0", () => {
+      console.log(`Server listening on 0.0.0.0:${port}`);
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "";

@@ -57,7 +57,26 @@ A REST API for user registration and login, with JWT-protected task management. 
    npm start
    ```
 
-   On success, the API logs `MongoDB connected successfully` and the local server URL. If the database connection fails, the server does not start.
+   On success, the API logs `MongoDB connected successfully` and a listening message. If the database connection fails, the server does not start.
+
+## Deploying to Render
+
+Create a Render **Web Service** for this repository and use:
+
+- **Build Command:** `npm ci`
+- **Start Command:** `npm start`
+
+There is no separate compile/build step; `npm start` runs the existing `node server.js` script. In the Render service's **Environment** settings, add:
+
+| Variable | Value |
+| --- | --- |
+| `MONGO_URI` | Your MongoDB Atlas connection URI |
+| `JWT_SECRET` | A securely generated random value of at least 32 characters |
+| `JWT_EXPIRES_IN` | Optional; defaults to `1d` |
+
+Render supplies `PORT` automatically. Do not commit a `.env` file or set `PORT` yourself. The application uses Render's environment variables directly; `dotenv` only loads a local `.env` file during local development. The server connects to MongoDB before it begins listening, and binds to `0.0.0.0` on the configured port.
+
+After setting the variables, save the changes and deploy or trigger a new deploy. Check the deployment logs for `MongoDB connected successfully` followed by the listening message, then open the service URL to verify the `/` health endpoint responds. If the database connection fails, confirm the Atlas URI and that Atlas Network Access permits connections from your deployed service. Never paste credentials or secrets into logs, source control, or support messages.
 
 For development with automatic restarts:
 
@@ -146,7 +165,6 @@ There is currently no automated test script in `package.json`. To manually smoke
 - Use a strong, randomly generated `JWT_SECRET` of at least 32 characters. Do not expose JWTs in logs or commit them.
 - Restrict MongoDB Atlas Network Access and give the database user only the permissions the application needs.
 - The current Express CORS configuration allows requests from any origin. Restrict allowed origins before deploying for real users, and serve production traffic over HTTPS.
-- The server currently configures Google Public DNS before MongoDB connects to work around the development environment's SRV DNS resolution. Review whether this override is needed in your deployment environment.
 
 ## AI usage declaration
 
